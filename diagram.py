@@ -313,8 +313,26 @@ def make_diagram(list_heights, dict_heights, dict_neighbors,
 
 	return diagram
 
+def sample_circle(n):
+	"""
+	This function gives evenly spaced directions
+	on the cirlce and returns them in a 2 by n 
+	matrix.  Each row represents a direction
+	"""
+	thetas = np.linspace(0, 2*np.pi, n)
+	xs = np.cos(thetas)
+	ys = np.sin(thetas)
+	directions = np.array([xs,ys]).T
+	return directions
 
+def random_circle(n):
+	"""
+	This function randomly samples n points on the circle
+	"""
+	draws = np.random.uniform(low=0, high=2*np.pi, size=n)
+	xs = np.cos(draws)
+	ys = np.sin(draws)
+	directions = np.array([xs,ys]).T
+	return directions
 
-
-	
 
