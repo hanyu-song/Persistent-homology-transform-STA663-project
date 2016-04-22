@@ -335,4 +335,39 @@ def random_circle(n):
 	directions = np.array([xs,ys]).T
 	return directions
 
+def sample_sphere(n):
+	"""
+	This function returns approximately n points
+	on the sphere.  It may return more if n is 
+	not a perfect square.  It will always return at 
+	least n points.  
+	"""
+	N = np.sqrt(n) + 1
+	thetas = np.linspace(0, np.pi, N)
+	phis = np.linspace(0, 2*np.pi, N)
+	points = np.meshgrid(thetas, phis)
+	xs = np.sin(points[0])*np.sin(points[1])
+	ys = np.sin(points[0])*np.cos(points[1])
+	zs = np.cos(points[0])
+	
+	matrix = np.vstack([xs.flatten(), ys.flatten(), zs.flatten()]).T
+	return matrix
 
+
+def random_sphere(n):
+	"""
+	This function returns approximately n randomly
+	select points on the sphere.  It may return more if n is 
+	not a perfect square.  It will always return at 
+	least n points.  
+	"""
+	N = np.sqrt(n) + 1
+	thetas = np.random.uniform(0, np.pi, N)
+	phis = np.random.uniform(0, 2*np.pi, N)
+	points = np.meshgrid(thetas, phis)
+	xs = np.sin(points[0])*np.sin(points[1])
+	ys = np.sin(points[0])*np.cos(points[1])
+	zs = np.cos(points[0])
+	
+	matrix = np.vstack([xs.flatten(), ys.flatten(), zs.flatten()]).T
+	return matrix
