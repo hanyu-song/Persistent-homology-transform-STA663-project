@@ -121,3 +121,200 @@ def finite_pt_dist(diagram1, diagram2, q):
 			value = matrix[row][column]
 			total += value
 		return total
+
+
+def read_mesh_graph(filename, d):
+	file = open(filename, "r")
+	line = file.readline()
+	splitline = line.split()
+	num_vert = int(splitline[0])
+	num_edges = int(splitline[1])
+
+	dict_vert = {}
+	list_edges = []
+
+	# dictionary of vertices {i: v_i}
+
+	if d == 3:
+		for i in range(num_vert):
+			line = file.readline()
+			splitline = line.split()
+
+			dict_vert.update({i:(float(x) for x in splitline)})
+	elif d == 2:
+		for i in range(num_edges):
+			line = file.readline()
+			splitline = line.split()
+
+			dict_vert.update({i:(float(x) for x in splitline)})
+
+	for i in range(num_edges):
+		line = file.readline()
+		splitline = line.split()
+		list_edges.append((int(splitline[0]),int(splitline[1])))
+
+	list_vert = []
+	for edge in list_edges:
+		list_vert.append(e[0])
+		list_vert.append(e[1])
+	no_rep_vert = list(set(list_of_vert))
+	dict_vert_clean = {}
+	# does this need to be a set?
+	# set in original code, list here
+	for v in no_rep_vert:
+		dict_vert_clean.update({v: dict_vert[v]})
+
+	return(dict_vert_clean, list_edges)
+
+def direction_order(dict_vert, list_edges, direction):
+	"""
+	This function computes the height of all vertices with
+	respect to a specified direction and returns the height 
+	of each vertex.
+
+	The function also computes, for each vertex, a list of vertices
+	that are lower (with respect to direction) 
+	"""
+	
+	# this dictionary will contain the vertices that have
+	# a lower height with respect to direction
+	dict_neighbors = {}
+
+	# this dictionary will map {v : height(v)} for
+	# each vertex v
+	list_heights = []
+	dict_heights
+	for v in dict_vert:
+		coords = dict_vert[v]
+		# this is height with respect to direction
+		height = sum(vertex[i]*direction[i] for i in range(len(vertex)))
+		dict_heights.update({v : height})
+		list_heights.append((v,height))
+	# sort vertices by height	
+	list_heights.sort(key = lambda x: x[1])
+
+	dict_neighbors = {v : [] for v in dict_vert.keys()}
+
+	# for each vertex we find all other vertices that lower
+	# height with respect to direction 
+	for edge in list_edges:
+		if dict_heights[edge[0]] > dict_heights[edge[1]]:
+			# if first vertex is higher than second
+			# add second vertex to list for first
+			# vertex
+			dict_neighbors[edge[0]].append(edge[1])
+
+		elif dict_heights[edge[0]] == dict_heights[edge[1]]:
+			# if they have the same height, we add the 
+			# lower index to the list of the larger index
+			if edge[0] > edge[1]:
+				dict_heights[edge[0]].append(edge[1])
+			# cannot have edge from vertex to itself
+			# so if above condition is false, we must
+			# have edge[1] > edge[0]
+			else:
+				dict_heights[edge[1]].append(edge[0])
+		# if other conditions are not met, then edge[1] is
+		# higher than edge[0]
+		else:
+			dict_neighbors[edge[1]].append(edge[0])
+	return list_heights, dict_heights, dict_neighbors
+
+# these classes are used for the Union-find algorithm
+# this is a method we can use to detect connected class
+# in the persistence diagrams
+
+class Node:
+	def __init__(self, index):
+		self.parent = self
+		self.index = index
+	
+	def changeroot(self, y):
+		# this class is used to
+		# update the root of tree of 
+		# the node for x
+		# this essentially merges two
+		# trees
+		self.parent = y
+
+def Find(x):
+	"""
+	This function determines the root of the tree
+	that x is in.  It works recursively.
+	"""
+	if x.parent == x:
+		return x
+	else:
+		x.parent = Find(x.parent)
+		return x.parent
+def make_diagram(list_heights, dict_heights, dict_neighbors, 
+		infinity = 100):
+	"""
+	This function makes a persistence diagrams given heights
+
+	We use Union-Find algorithm to detect when there cycles,
+	which represent merged classes
+	"""
+	# first we create empty an empty diagram class
+	diagram = Diagram()
+	
+	dict_nodes = {}
+
+	for i in list_heights:
+		# here i is (v, height(v))
+		v = i[0] # number of current vertex
+		h = i[1] # height of current vertex
+		if len(dict_neighbors[i[0]]) == 0:
+			# if there are no points below the current point
+			# it represents a new class and becomes
+			# a note with itself as a parent
+		else:
+			list_compons = []
+			for j in dict_neighbors[i[0]]:
+				# Find(dict_nodes[j]).index returns the index
+				# of the first node in the component in which
+				# the vertex is lcoate
+			set_compons = set(list_compons)
+			ordered_compons = list(set_compons)
+			
+			if len(ordered_compons) == 1:
+				node = Node(v)
+				node.changeroot(dict_nodes[ordered_compons[0]])
+				dict_nodes.update({v: node})
+			else:
+				list_birth_times = [dict_heights[j] for j in
+						ordered_compons]
+				birth = min(list_birth_times)
+				count = 0
+
+				ordered_compons.sort()
+				for j in ordered_compons:
+					if dict_heights[j] > birth:
+						if dict_heights[j] < h - 1:
+							diagram.addpt([dict_heights[j], h])
+					if dict_heights[j] == birth:
+						if count == 0:
+							first_class = j
+							node = Node(v)
+							node.changeroot(dict_nodes[first_class])
+							dict_nodes.update({v: node})
+							count = 1
+						else:
+							if dict_heights[j] < h - 1:
+								diagram.addpt([dict_heights[j],h])
+				for k in ordered_compons:
+					dict_nodes[k].changeroot(dict_nodes[first_class])
+			final_compons = []
+			for v in dict_nodes:
+				final_compons.append(Find(dict_nodes[v]).index)
+			set_final_compons = set(final_compons)
+			for v in set_final_compons:
+				diagram.addinfpt(dict_heights[v])
+
+	return diagram
+
+
+
+
+	
+
