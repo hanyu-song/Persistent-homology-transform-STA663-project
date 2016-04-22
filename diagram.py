@@ -313,6 +313,14 @@ def make_diagram(list_heights, dict_heights, dict_neighbors,
 
 	return diagram
 
+
+
+# these functions are used to sample directions
+# the directions are used to construct persistence diagrams
+# we need to construct persistence diagrams in many directions
+# the 2-D functions will return exactly n directions, either
+# randomly generated or evenly spaced
+# the 3-d functions will return at least n directions
 def sample_circle(n):
 	"""
 	This function gives evenly spaced directions
