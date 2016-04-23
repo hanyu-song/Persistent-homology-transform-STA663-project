@@ -379,3 +379,43 @@ def random_sphere(n):
 	
 	matrix = np.vstack([xs.flatten(), ys.flatten(), zs.flatten()]).T
 	return matrix
+
+
+# now we write a function that actually computes distances
+def pairwise_distances(list_shapes, list_directions):
+	"""
+	This function actually calculates the pairwise distance between
+	between all objects in list_shapes.  The distance is estimated
+	using the vectors in list_directions.  It returns a pairwise
+	distance matrix.  
+	"""
+
+	# first we calculate the persistence diagram for each object
+	# in each direction
+	l_diagrams = []
+	for shape in list_shapes:
+		shape_diagrams = []
+		for direction in list_directions:
+			l_heights, d_heights, d_n = direction_order(shape[0],
+					shape[1], direction)
+			shape_diagram = make_diagram(l_heights, d_heights,
+					d_n)
+			shape_diagrams.append(shape_diagram)
+		l_diagrams.append(shape_diagrams)
+	N = len(list_shapes)
+	K = len(list_directions)
+	dists = np.empty((N,N))
+	for i in range(N):
+		for j in range(i,N):
+			finite_dist = 0
+			infinite_dist = 0
+			for k in range(K):
+				finite_dist += finite_pt_dist(l_diagrams[i][k]
+						l_diagrams[j][k], 1)
+				infinite_dist += inf_pt_dist(l_diagrams[i][k],
+						l_diagrams[j][k], 1)
+			dists[i,j] += finite_dist + infinite_dist
+	dists += dists.T
+	return dists
+
+
