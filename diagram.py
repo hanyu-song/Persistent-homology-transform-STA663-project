@@ -140,30 +140,27 @@ def read_mesh_graph(filename, d):
 			line = file.readline()
 			splitline = line.split()
 
-			dict_vert.update({i:(float(x) for x in splitline)})
+			dict_vert.update({i:list(float(x) for x in splitline)})
 	elif d == 2:
 		for i in range(num_edges):
 			line = file.readline()
 			splitline = line.split()
-
-			dict_vert.update({i:(float(x) for x in splitline)})
-
+			dict_vert.update({i:list(float(x) for x in splitline)})
 	for i in range(num_edges):
 		line = file.readline()
 		splitline = line.split()
 		list_edges.append((int(splitline[0]),int(splitline[1])))
-
-	list_vert = []
+	list_vert  = []
 	for edge in list_edges:
-		list_vert.append(e[0])
-		list_vert.append(e[1])
-	no_rep_vert = list(set(list_of_vert))
+		list_vert.append(edge[0])
+		list_vert.append(edge[1])
+	no_rep_vert = list(set(list_vert))
 	dict_vert_clean = {}
 	# does this need to be a set?
 	# set in original code, list here
 	for v in no_rep_vert:
-		dict_vert_clean.update({v: dict_vert[v]})
-
+		dict_vert_clean.update({v: dict_vert[v-1]})
+	file.close()
 	return(dict_vert_clean, list_edges)
 
 def direction_order(dict_vert, list_edges, direction):
@@ -183,11 +180,11 @@ def direction_order(dict_vert, list_edges, direction):
 	# this dictionary will map {v : height(v)} for
 	# each vertex v
 	list_heights = []
-	dict_heights
-	for v in dict_vert:
+	dict_heights = {}
+	for v in dict_vert.keys():
 		coords = dict_vert[v]
 		# this is height with respect to direction
-		height = sum(vertex[i]*direction[i] for i in range(len(vertex)))
+		height = sum(coords[i]*direction[i] for i in range(len(coords)))
 		dict_heights.update({v : height})
 		list_heights.append((v,height))
 	# sort vertices by height	
@@ -208,12 +205,12 @@ def direction_order(dict_vert, list_edges, direction):
 			# if they have the same height, we add the 
 			# lower index to the list of the larger index
 			if edge[0] > edge[1]:
-				dict_heights[edge[0]].append(edge[1])
+				dict_neighbors[edge[0]].append(edge[1])
 			# cannot have edge from vertex to itself
 			# so if above condition is false, we must
 			# have edge[1] > edge[0]
 			else:
-				dict_heights[edge[1]].append(edge[0])
+				dict_neighbors[edge[1]].append(edge[0])
 		# if other conditions are not met, then edge[1] is
 		# higher than edge[0]
 		else:
@@ -268,12 +265,14 @@ def make_diagram(list_heights, dict_heights, dict_neighbors,
 			# if there are no points below the current point
 			# it represents a new class and becomes
 			# a note with itself as a parent
+			dict_nodes.update({i[0]:Node(i[0])})
 		else:
 			list_compons = []
 			for j in dict_neighbors[i[0]]:
 				# Find(dict_nodes[j]).index returns the index
 				# of the first node in the component in which
 				# the vertex is lcoate
+				list_compons.append(Find(dict_nodes[j]).index)
 			set_compons = set(list_compons)
 			ordered_compons = list(set_compons)
 			
@@ -410,7 +409,7 @@ def pairwise_distances(list_shapes, list_directions):
 			finite_dist = 0
 			infinite_dist = 0
 			for k in range(K):
-				finite_dist += finite_pt_dist(l_diagrams[i][k]
+				finite_dist += finite_pt_dist(l_diagrams[i][k],
 						l_diagrams[j][k], 1)
 				infinite_dist += inf_pt_dist(l_diagrams[i][k],
 						l_diagrams[j][k], 1)
