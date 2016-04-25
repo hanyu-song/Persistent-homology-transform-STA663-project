@@ -417,4 +417,41 @@ def pairwise_distances(list_shapes, list_directions):
 	dists += dists.T
 	return dists
 
-
+def make_diagram(dict_heights, dict_neighbors):
+	dict_trees = {v: Tree(v) for v in dict_heights.keys()}
+	vertices = set(dict_heights.keys())
+	heights = set(dict_heights.values())
+	heights_sorted = sorted(list(heights))
+	dict_below_h = {h: [] for h in heights}
+	for h in heights:
+		for v in vertices:
+			if dict_heights[v] <= h:
+				dict_below_h[h].append(v)
+	dict_deaths = {v: None for v in dict_heights.keys()}
+	dead = set()
+	for v in vertices:
+		if len(dict_neighbors[v]) != 0:
+			dict_deaths.update({v: dict_heights[v]})
+			dead.add(v)
+	alive = vertices.difference(dead)
+	for h in heights_sorted:
+		died = set()
+		for v in dict_below_h[h]:
+			for neigh in dict_neighbors[v]:
+				height_Union(dict_trees[v], dict_trees[neigh],
+						dict_heights)
+		for v in alive:
+			if dict_neights[v] <= h:
+				own_root = v != Find(dict_trees[v]).name
+				if own_root:
+					died.add(v)
+					dict_deaths.update({v: h})
+		alive = alive.difference(died)
+	diag = diagram.Diagram()
+	for v in dict_heights.keys():
+		if dict_deaths[v] == None:
+			diag.addinfpt(dict_heights[v])
+		else:
+			diag.addpt((dict_heights[v], dict_deaths[v]))
+	
+	return diag
