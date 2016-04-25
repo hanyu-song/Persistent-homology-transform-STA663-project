@@ -221,97 +221,55 @@ def direction_order(dict_vert, list_edges, direction):
 # this is a method we can use to detect connected class
 # in the persistence diagrams
 
-class Node:
-	def __init__(self, index):
+class Tree:
+	def __init__(self, name):
 		self.parent = self
-		self.index = index
+		self.name = name
+		self.rank = 0
 	
-	def changeroot(self, y):
-		# this class is used to
-		# update the root of tree of 
-		# the node for x
-		# this essentially merges two
-		# trees
-		self.parent = y
-
 def Find(x):
 	"""
 	This function determines the root of the tree
-	that x is in.  It works recursively.
+	that x is in.  It works recursively. x should
+	be an object of class Tree.
 	"""
-	if x.parent == x:
-		return x
-	else:
-		x.parent = Find(x.parent)
-		return x.parent
-def make_diagram(list_heights, dict_heights, dict_neighbors, 
-		infinity = 100):
-	"""
-	This function makes a persistence diagrams given heights
+	if x.parent != x:
+		x.parent = Find(x.parent)	
+	return x.parent
 
-	We use Union-Find algorithm to detect when there cycles,
-	which represent merged classes
+def height_Union(x, y, dict_heights):
 	"""
-	# first we create empty an empty diagram class
-	diagram = Diagram()
-	
-	dict_nodes = {}
+	This function takes the union of two nodes.
+	It does this by changing the root one tree
+	to be the root of the other tree.  It changes the
+	root based on height.  The root becomes the node with
+	the lowest height.  So the node that is born first
+	becomes the root.  
 
-	for i in list_heights:
-		# here i is (v, height(v))
-		v = i[0] # number of current vertex
-		h = i[1] # height of current vertex
-		if len(dict_neighbors[i[0]]) == 0:
-			# if there are no points below the current point
-			# it represents a new class and becomes
-			# a note with itself as a parent
-			dict_nodes.update({i[0]:Node(i[0])})
+	If the two roots have the same height, the lowest 
+	number becomes the root.  For example, if we have vertex
+	1 and vertix 3 at the same height, vertex 1 will become
+	the root.  
+
+	Inputs:
+		x,y:  objects of Tree class
+		dict_heights:  a map v-> h, where v is a vertex,
+		which should be the .name of some tree and h is
+		the height with respect to some direction
+	"""
+	x_root = Find(x)
+	y_root = Find(y)
+	if x_root == y_root:
+		return None
+	if dict_heights[x_root.name] < dict_heights[y_root.name]:
+		y_root.parent = x_root
+	elif dict_heights[x_root.name] == dict_heights[y_root.name]:
+		if x.name < y.name:
+			y_root.parent = x_root
 		else:
-			list_compons = []
-			for j in dict_neighbors[i[0]]:
-				# Find(dict_nodes[j]).index returns the index
-				# of the first node in the component in which
-				# the vertex is lcoate
-				list_compons.append(Find(dict_nodes[j]).index)
-			set_compons = set(list_compons)
-			ordered_compons = list(set_compons)
-			
-			if len(ordered_compons) == 1:
-				node = Node(v)
-				node.changeroot(dict_nodes[ordered_compons[0]])
-				dict_nodes.update({v: node})
-			else:
-				list_birth_times = [dict_heights[j] for j in
-						ordered_compons]
-				birth = min(list_birth_times)
-				count = 0
-
-				ordered_compons.sort()
-				for j in ordered_compons:
-					if dict_heights[j] > birth:
-						if dict_heights[j] < h - 1:
-							diagram.addpt([dict_heights[j], h])
-					if dict_heights[j] == birth:
-						if count == 0:
-							first_class = j
-							node = Node(v)
-							node.changeroot(dict_nodes[first_class])
-							dict_nodes.update({v: node})
-							count = 1
-						else:
-							if dict_heights[j] < h - 1:
-								diagram.addpt([dict_heights[j],h])
-				for k in ordered_compons:
-					dict_nodes[k].changeroot(dict_nodes[first_class])
-			final_compons = []
-			for v in dict_nodes:
-				final_compons.append(Find(dict_nodes[v]).index)
-			set_final_compons = set(final_compons)
-			for v in set_final_compons:
-				diagram.addinfpt(dict_heights[v])
-
-	return diagram
-
+			x_root.parent = y_root
+	else:
+		x_root.parent = y_root
 
 
 # these functions are used to sample directions
