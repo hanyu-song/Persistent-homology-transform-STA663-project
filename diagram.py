@@ -58,7 +58,7 @@ def L1dist(x,y):
 	This function computes the L1 distance between
 	two vectors x and y
 	"""
-	c = abs(a[0]-b[0]) + abs(a[1] - b[1])
+	c = abs(x[0]-y[0]) + abs(x[1] - y[1])
 	return c
 
 def diag_len(x):
@@ -102,7 +102,7 @@ def finite_pt_dist(diagram1, diagram2, q):
 			a = math.pow(diag_len(diagram1.points[i]), q)
 			for k in range(n):
 				row.append(a)
-			matrix.append(row)
+			dist_mat.append(row)
 		# create row with distance to diagonal
 		row = []
 		for j in range(m):
@@ -111,16 +111,16 @@ def finite_pt_dist(diagram1, diagram2, q):
 			row.append(0)
 		# add i copies of row to matrix
 		for i in range(m):
-			matrix.append(row)
+			dist_mat.append(row)
 		m = Munkres()
 		# this extracts the indices of the shortest distance
-		indices = m.compute(matrix)
+		indices = m.compute(dist_mat)
 		# now we can compute the total distance
 		total_dist = 0
 		for row, col in indices:
-			value = matrix[row][column]
-			total += value
-		return total
+			value = dist_mat[row][col]
+			total_dist += value
+		return total_dist
 
 
 def read_mesh_graph(filename, d):
@@ -355,8 +355,7 @@ def pairwise_distances(list_shapes, list_directions):
 		for direction in list_directions:
 			l_heights, d_heights, d_n = direction_order(shape[0],
 					shape[1], direction)
-			shape_diagram = make_diagram(l_heights, d_heights,
-					d_n)
+			shape_diagram = make_diagram(d_heights, d_n)
 			shape_diagrams.append(shape_diagram)
 		l_diagrams.append(shape_diagrams)
 	N = len(list_shapes)
@@ -371,9 +370,77 @@ def pairwise_distances(list_shapes, list_directions):
 						l_diagrams[j][k], 1)
 				infinite_dist += inf_pt_dist(l_diagrams[i][k],
 						l_diagrams[j][k], 1)
-			dists[i,j] += finite_dist + infinite_dist
+			dists[i,j] += (finite_dist + infinite_dist)/K
 	dists += dists.T
 	return dists
+
+def scaled_distance(list_objects, matrix_dir):
+	# number of objects
+	N = len(list_objects)
+	# number of directions	
+	k = matrix_dir.shape[1]
+	# compute centering constant
+	K = 0
+	for i in range(k):
+		K += np.cos(2*np.pi*i/k)**2
+	for i in range(N):
+		obj = list_matrices[i][0]
+		prod = obj.dot(matrix_dir)
+		# minimum of eac column is lambda_i
+		lambdas = prod.min(axis = 0)
+		u = (1/K)*matrix_dir.dot(lambdas)
+		list_matrices[i] -= u[np.newaxis,:]
+		# now we scale each object
+		L = -lambdas.sum()
+		list_matrices[i] /= L
+	# now we create a list of diagrams
+	# each item in the list is a list of
+	# diagrams for one object in each direction
+	# so it is a list of length N with sublists
+	# of size k
+	l_diagrams = []
+	for i in range(N):
+		shape = list_objects[i]
+		# this is will hold all diagrams for
+		# the current object
+		shape_diagrams = []
+		for j in range(k):
+			direction = matrix_dir[:,j].T
+			# make the diagram for jth direction
+			l_heights, d_heights, d_n = direction_order(shape[0],
+					shape[1], direction)
+			shape_diagram = make_diagram(d_heights, d_n)
+
+			shape_diagrams.append(shape_diagram)
+		l_diagrams.append(shape_diagram)
+	dist_mat = np.zeros((N,N))
+	for i in range(N):
+		for j in range(i, N):
+			list_dists = []
+			# to find the actual distance between two objects
+			# we need to consider the distance under various
+			# rotations.  rotations, however, are simply other
+			# persistence diagrams.  Thus we calculate the distance
+			# between a diagram and all other persistence diagrams
+			# for the second diagram, which can be seen as 
+			# rotations of the second diagram
+			for shift in range(k):
+				finite_dist = 0
+				infinite_dist = 0
+				for cur in range(k):
+					finite_dist += finite_pt_dist(l_diagrams[i][cur],
+							l_diagrams[j][(cur + shift)% k],
+							1)
+					infinite_dist += inf_pt_dist(l_diagrams[i][cur],
+							l_diagrams[j][(cur + shift)% k],
+							1)
+				list_dists.append(finite_dist + infinite_dist)
+			actual_dist = min(list_dists)
+			dist_mat[i,j] += actual_dist/k
+	dist_mat += dist_mat.t
+	return dist_mat
+
+
 
 def make_diagram(dict_heights, dict_neighbors):
 	dict_trees = {v: Tree(v) for v in dict_heights.keys()}
@@ -399,13 +466,13 @@ def make_diagram(dict_heights, dict_neighbors):
 				height_Union(dict_trees[v], dict_trees[neigh],
 						dict_heights)
 		for v in alive:
-			if dict_neights[v] <= h:
+			if dict_heights[v] <= h:
 				own_root = v != Find(dict_trees[v]).name
 				if own_root:
 					died.add(v)
 					dict_deaths.update({v: h})
 		alive = alive.difference(died)
-	diag = diagram.Diagram()
+	diag = Diagram()
 	for v in dict_heights.keys():
 		if dict_deaths[v] == None:
 			diag.addinfpt(dict_heights[v])
