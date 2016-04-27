@@ -1,6 +1,8 @@
 import math
 import numpy as np
+from scipy.optimize import linear_sum_assignment
 from munkres import Munkres
+from numba import jit
 
 # define the Diagram class
 # this is used to store persistence diagrams
@@ -70,7 +72,6 @@ def diag_len(x):
 	"""
 	return x[1] - x[0]
 
-
 def finite_pt_dist(diagram1, diagram2, q):
 	"""
 	This function computes the smallest distance between the
@@ -112,12 +113,15 @@ def finite_pt_dist(diagram1, diagram2, q):
 		# add i copies of row to matrix
 		for i in range(m):
 			dist_mat.append(row)
-		m = Munkres()
+		#m = Munkres()
 		# this extracts the indices of the shortest distance
-		indices = m.compute(dist_mat)
+		#indices = m.compute(dist_mat)
 		# now we can compute the total distance
+		row_ind, col_ind = linear_sum_assignment(dist_mat)
 		total_dist = 0
-		for row, col in indices:
+		for i in range(len(row_ind)):
+			row = row_ind[i]
+			col = col_ind[i]
 			value = dist_mat[row][col]
 			total_dist += value
 		return total_dist
@@ -434,9 +438,11 @@ def scaled_distance(list_objects, matrix_dir):
 			# for the second diagram, which can be seen as 
 			# rotations of the second diagram
 			for shift in range(k):
+				print("Considering shift: ", shift)
 				finite_dist = 0
 				infinite_dist = 0
 				for cur in range(k):
+					print("Calculating finite distance for", cur)
 					finite_dist += finite_pt_dist(l_diagrams[i][cur],
 							l_diagrams[j][(cur + shift)% k],
 							1)
