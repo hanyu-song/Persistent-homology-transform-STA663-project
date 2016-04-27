@@ -384,15 +384,15 @@ def scaled_distance(list_objects, matrix_dir):
 	for i in range(k):
 		K += np.cos(2*np.pi*i/k)**2
 	for i in range(N):
-		obj = list_matrices[i][0]
+		obj = list_objects[i][0]
 		prod = obj.dot(matrix_dir)
 		# minimum of eac column is lambda_i
 		lambdas = prod.min(axis = 0)
 		u = (1/K)*matrix_dir.dot(lambdas)
-		list_matrices[i] -= u[np.newaxis,:]
+		list_objects[i][0] = obj -u[np.newaxis,:]
 		# now we scale each object
 		L = -lambdas.sum()
-		list_matrices[i] /= L
+		list_objects[i][0] /= L
 	# now we create a list of diagrams
 	# each item in the list is a list of
 	# diagrams for one object in each direction
@@ -406,16 +406,25 @@ def scaled_distance(list_objects, matrix_dir):
 		shape_diagrams = []
 		for j in range(k):
 			direction = matrix_dir[:,j].T
+			# now we transform the data into forms we
+			# can use with our existing functions
+			# to do this, we make a dictionary mapping
+			# each vertex to its coordinates
+			num_rows = shape[0].shape[0]
+			num_edges = shape[1].shape[0]
+			dict_vert = {i+1: shape[0][i,:] for i in range(num_rows)}
+			list_edges = [list(shape[1][i,:]) for i in range(num_edges)]
 			# make the diagram for jth direction
-			l_heights, d_heights, d_n = direction_order(shape[0],
-					shape[1], direction)
+			l_heights, d_heights, d_n = direction_order(dict_vert,
+					list_edges, direction)
 			shape_diagram = make_diagram(d_heights, d_n)
-
 			shape_diagrams.append(shape_diagram)
-		l_diagrams.append(shape_diagram)
+		l_diagrams.append(shape_diagrams)
 	dist_mat = np.zeros((N,N))
+	print("Beginning to calculate distances")
 	for i in range(N):
 		for j in range(i, N):
+			print("Calculating distance between", i, "and", j)
 			list_dists = []
 			# to find the actual distance between two objects
 			# we need to consider the distance under various
@@ -437,7 +446,7 @@ def scaled_distance(list_objects, matrix_dir):
 				list_dists.append(finite_dist + infinite_dist)
 			actual_dist = min(list_dists)
 			dist_mat[i,j] += actual_dist/k
-	dist_mat += dist_mat.t
+	dist_mat += dist_mat.T
 	return dist_mat
 
 
