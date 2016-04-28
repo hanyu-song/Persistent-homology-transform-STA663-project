@@ -495,3 +495,49 @@ def make_diagram(dict_heights, dict_neighbors):
 			diag.addpt((dict_heights[v], dict_deaths[v]))
 	
 	return diag
+
+
+
+
+# break up distance functions
+def make_dist_mat(diagram1, diagram2, q):
+	n = len(diagram1.points)
+	m = len(diagram2.points)
+	dist_mat = np.zeros((n+m,n+m))
+	for i in range(n):
+		for j in range(m):
+			# distance from point i in diagram 1 to joint j in diagram 2
+
+			distance = pow(L1dist(diagram1.points[i], diagram2.points[j]),q)
+			dist_mat[i, j] += distance
+		# distance from point i of diagram 1 to diagonal
+		dist_to_diag = pow(diag_len(diagram1.points[i]), q)
+		dist_mat[i, m:][np.newaxis, :] += dist_to_diag*np.ones((1,n))
+		# now we consider the m copies of the diagonal
+	for j in range(m):
+		# distiance from jiagonal to point j of diagram 2
+		dist_to_diag = pow(diag_len(diagram2.points[j]),q)
+		dist_mat[n:,j][:,np.newaxis] += dist_to_diag*np.ones((m,1))
+	return dist_mat
+
+@jit
+def make_dist_jit(diagram1, diagram2, q):
+	n = len(diagram1.points)
+	m = len(diagram2.points)
+	dist_mat = np.zeros((n+m,n+m))
+	for i in range(n):
+		for j in range(m):
+			# distance from point i in diagram 1 to joint j in diagram 2
+
+			distance = pow(L1dist(diagram1.points[i], diagram2.points[j]),q)
+			dist_mat[i, j] += distance
+		# distance from point i of diagram 1 to diagonal
+		dist_to_diag = pow(diag_len(diagram1.points[i]), q)
+		for j in range(m):
+			dist_mat[i, j] += dist_to_diag
+		# now we consider the m copies of the diagonal
+	for j in range(m):
+		# distiance from jiagonal to point j of diagram 2
+		dist_to_diag = pow(diag_len(diagram2.points[j]),q)
+		dist_mat[n:,j][:,np.newaxis] += dist_to_diag*np.ones((m,1))
+	return dist_mat
