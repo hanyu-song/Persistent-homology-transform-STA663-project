@@ -94,28 +94,7 @@ def finite_pt_dist(diagram1, diagram2, q):
 		return 0
 	else:
 		# this code can probabily be optimized
-		dist_mat = []
-		for i in range(n):
-			row = []
-			for j in range(m):
-				length = L1dist(diagram1.points[i],diagram2.points[j])
-				row.append(math.pow(length,q))
-			a = math.pow(diag_len(diagram1.points[i]), q)
-			for k in range(n):
-				row.append(a)
-			dist_mat.append(row)
-		# create row with distance to diagonal
-		row = []
-		for j in range(m):
-			row.append(math.pow(diag_len(diagram2.points[j]), q))
-		for i in range(n):
-			row.append(0)
-		# add i copies of row to matrix
-		for i in range(m):
-			dist_mat.append(row)
-		#m = Munkres()
-		# this extracts the indices of the shortest distance
-		#indices = m.compute(dist_mat)
+		dist_mat = make_dist_mat(diagram1, diagram2, q)
 		# now we can compute the total distance
 		row_ind, col_ind = linear_sum_assignment(dist_mat)
 		total_dist = 0
