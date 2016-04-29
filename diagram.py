@@ -406,7 +406,7 @@ def scaled_distance(list_objects, matrix_dir):
 	dist_mat = np.zeros((N,N))
 	print("Beginning to calculate distances")
 	for i in range(N):
-		for j in range(i, N):
+		for j in range(i+1, N):
 			print("Calculating distance between", i, "and", j)
 			list_dists = []
 			# to find the actual distance between two objects
@@ -417,11 +417,11 @@ def scaled_distance(list_objects, matrix_dir):
 			# for the second diagram, which can be seen as 
 			# rotations of the second diagram
 			for shift in range(k):
-				print("Considering shift: ", shift)
+				#print("Considering shift: ", shift)
 				finite_dist = 0
 				infinite_dist = 0
 				for cur in range(k):
-					print("Calculating finite distance for", cur)
+					#	print("Calculating finite distance for", cur)
 					finite_dist += finite_pt_dist(l_diagrams[i][cur],
 							l_diagrams[j][(cur + shift)% k],
 							1)
@@ -471,7 +471,11 @@ def make_diagram(dict_heights, dict_neighbors):
 		if dict_deaths[v] == None:
 			diag.addinfpt(dict_heights[v])
 		else:
-			diag.addpt((dict_heights[v], dict_deaths[v]))
+			# only add point if not on the diagonal
+			# this is designed to reduce the complexity
+			# of the problem for the Munkres algorithm
+			if dict_heights[v] != dict_deaths[v]:
+				diag.addpt((dict_heights[v], dict_deaths[v]))
 	
 	return diag
 
