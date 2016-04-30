@@ -1,4 +1,5 @@
 import math
+import multiprocessing as mp
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from munkres import Munkres
@@ -425,6 +426,8 @@ def scaled_distance(list_objects, matrix_dir):
 				list_dists.append(finite_dist + infinite_dist)
 			actual_dist = min(list_dists)
 			dist_mat[i,j] += actual_dist/k
+			print(actual_dist/k)
+			print(calculate_distance(i, j, k, l_diagrams))
 	dist_mat += dist_mat.T
 	return dist_mat
 
@@ -517,4 +520,101 @@ def make_dist_jit(diagram1, diagram2, q):
 		# distiance from jiagonal to point j of diagram 2
 		dist_to_diag = pow(diag_len(diagram2.points[j]),q)
 		dist_mat[n:,j][:,np.newaxis] += dist_to_diag*np.ones((m,1))
+	return dist_mat
+
+
+def calculate_distance(i, j, k, l_diagrams):
+	"""
+	This function calculates the distance between i and j modulo rotation.
+	To do this, we calculate the distance between i and all rotations of j
+	and take the minimal distance.  We do not actually rotate the object.
+	Instead, we realize that the persistence diagram of a rotation is
+	is persistence diagram of a different direction.  Thus we simply rename the 
+	persistence diagrams.  
+
+	Args:
+		i:  index of first object
+		j:  index of second object
+		k:  number of directions
+		l_diagrams:  a list of diagrams for each object in each of the
+			k directions
+	
+	Return:
+		The returns a tuple with 3 number: i, j, and the distance between
+		these objects under rotation.  The return of i and j is for convenience
+		in parallelization.
+	"""
+	list_dists = []
+	for shift in range(k):
+		finite_dist = 0
+		infinite_dist = 0
+		for cur in range(k):
+			finite_dist += finite_pt_dist(l_diagrams[i][cur],
+										  l_diagrams[j][(cur + shift)%k],
+										  1)
+			infinite_dist += inf_pt_dist(l_diagrams[i][cur],
+										 l_diagrams[j][(cur + shift)%k],
+										 1)
+		list_dists.append(finite_dist + infinite_dist)
+	actual_dist = min(list_dists)/k
+	return i, j, actual_dist
+
+
+
+
+def scaled_distance_par(list_objects, matrix_dir, workers):
+	# number of objects
+	N = len(list_objects)
+	# number of directions	
+	k = matrix_dir.shape[1]
+	# compute centering constant
+	K = 0
+	for i in range(k):
+		K += np.cos(2*np.pi*i/k)**2
+	for i in range(N):
+		obj = list_objects[i][0]
+		prod = obj.dot(matrix_dir)
+		# minimum of eac column is lambda_i
+		lambdas = prod.min(axis = 0)
+		u = (1/K)*matrix_dir.dot(lambdas)
+		list_objects[i][0] = obj -u[np.newaxis,:]
+		# now we scale each object
+		L = -lambdas.sum()
+		list_objects[i][0] /= L
+	# now we create a list of diagrams
+	# each item in the list is a list of
+	# diagrams for one object in each direction
+	# so it is a list of length N with sublists
+	# of size k
+	l_diagrams = []
+	for i in range(N):
+		shape = list_objects[i]
+		# this is will hold all diagrams for
+		# the current object
+		shape_diagrams = []
+		for j in range(k):
+			direction = matrix_dir[:,j].T
+			# now we transform the data into forms we
+			# can use with our existing functions
+			# to do this, we make a dictionary mapping
+			# each vertex to its coordinates
+			num_rows = shape[0].shape[0]
+			num_edges = shape[1].shape[0]
+			dict_vert = {i+1: shape[0][i,:] for i in range(num_rows)}
+			list_edges = [list(shape[1][i,:]) for i in range(num_edges)]
+			# make the diagram for jth direction
+			l_heights, d_heights, d_n = direction_order(dict_vert,
+					list_edges, direction)
+			shape_diagram = make_diagram(d_heights, d_n)
+			shape_diagrams.append(shape_diagram)
+		l_diagrams.append(shape_diagrams)
+	dist_mat = np.zeros((N,N))
+	print("Beginning to calculate distances")
+	list_inputs = [(i, j, k, l_diagrams) for i in range(N)
+										 for j in range(i+1, N)]
+	with mp.Pool(processes=workers) as pool:
+		distances = pool.starmap(calculate_distance, list_inputs)
+	for tup in distances:
+		dist_mat[tup[0],tup[1]] = tup[2]
+	dist_mat += dist_mat.T
 	return dist_mat
