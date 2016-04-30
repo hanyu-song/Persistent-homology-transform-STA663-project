@@ -106,7 +106,7 @@ def finite_pt_dist(diagram1, diagram2, q):
 		return total_dist
 
 
-def read_mesh_graph(filename, d):
+def read_mesh_graph(filename):
 	file = open(filename, "r")
 	line = file.readline()
 	splitline = line.split()
@@ -118,17 +118,11 @@ def read_mesh_graph(filename, d):
 
 	# dictionary of vertices {i: v_i}
 
-	if d == 3:
-		for i in range(num_vert):
-			line = file.readline()
-			splitline = line.split()
+	for i in range(num_vert):
+		line = file.readline()
+		splitline = line.split()
 
-			dict_vert.update({i:list(float(x) for x in splitline)})
-	elif d == 2:
-		for i in range(num_edges):
-			line = file.readline()
-			splitline = line.split()
-			dict_vert.update({i:list(float(x) for x in splitline)})
+		dict_vert.update({i:list(float(x) for x in splitline)})
 	for i in range(num_edges):
 		line = file.readline()
 		splitline = line.split()
