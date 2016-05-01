@@ -1,6 +1,8 @@
 import math
 import multiprocessing as mp
 import numpy as np
+import scipy.io as sio
+import glob
 from scipy.optimize import linear_sum_assignment
 from munkres import Munkres
 from numba import jit
@@ -618,3 +620,89 @@ def scaled_distance_par(list_objects, matrix_dir, workers):
 		dist_mat[tup[0],tup[1]] = tup[2]
 	dist_mat += dist_mat.T
 	return dist_mat
+
+
+
+def scaled_distance_short(list_objects, k, workers):
+	# number of objects
+	N = len(list_objects)
+	# number of directions	
+	matrix_dir = sample_circle(k).T
+	# compute centering constant
+	scaled_objects = center_scale(list_objects, matrix_dir)
+	# now we create a list of diagrams
+	# each item in the list is a list of
+	# diagrams for one object in each direction
+	# so it is a list of length N with sublists
+	# of size k
+	l_diagrams = make_diagrams(scaled_objects, matrix_dir)
+	dist_mat = np.zeros((N,N))
+	print("Beginning to calculate distances")
+	list_inputs = [(i, j, k, l_diagrams) for i in range(N)
+										 for j in range(i+1, N)]
+	with mp.Pool(processes=workers) as pool:
+		distances = pool.starmap(calculate_distance, list_inputs)
+	for tup in distances:
+		dist_mat[tup[0],tup[1]] = tup[2]
+	dist_mat += dist_mat.T
+	return dist_mat
+
+def center_scale(list_objects, matrix_dir):
+	k = matrix_dir.shape[1]
+	# calculate scaling constant
+	N = len(list_objects)
+	K = 0
+	for i in range(k):
+		K += np.cos(2*np.pi*i/k)**2
+	for i in range(N):
+		obj = list_objects[i][0]
+		prod = obj.dot(matrix_dir)
+		# minimum of each column is lambda_i
+		lambdas = prod.min(axis = 0)
+		u = (1/K)*matrix_dir.dot(lambdas)
+		list_objects[i][0] = obj - u[np.newaxis, :]
+		# now we scale each object
+		L = -lambdas.sum()
+		list_objects[i][0] /= L
+	return list_objects
+
+def make_diagrams(list_objects, matrix_dir):
+	k = matrix_dir.shape[1]
+	N = len(list_objects)
+	l_diagrams = []
+	for i in range(N):
+		shape = list_objects[i]
+		shape_diagrams = []
+		for j in range(k):
+			direction = matrix_dir[:,j].T
+			# now we transform the data into forms we
+			# can use with our existing functions
+			# to do this, we make a dictionary mapping
+			# each vertex to its coordinates
+			num_rows = shape[0].shape[0]
+			num_edges = shape[1].shape[0]
+			dict_vert = {i+1: shape[0][i,:] for i in range(num_rows)}
+			list_edges = [list(shape[1][i,:]) for i in range(num_edges)]
+			# make the diagram for jth direction
+			l_heights, d_heights, d_n = direction_order(dict_vert,
+					list_edges, direction)
+			shape_diagram = make_diagram(d_heights, d_n)
+			shape_diagrams.append(shape_diagram)
+		l_diagrams.append(shape_diagrams)
+	return l_diagrams
+
+def read_closed_shapes(directory):
+	"""
+	This function reads in all .mat files a specified directory
+	"""
+	query = directory + "*.mat"
+	files = glob.glob(query)
+	shapes = []
+	for file in files:
+		vertices = sio.loadmat(file)['x']
+		N = vertices.shape[0]
+		edges = np.zeros((N,2))
+		for i in range(N-1):
+			edges[i,:] = np.array([i+1, i+2])
+		shapes.append([vertices, edges])
+	return shapes
