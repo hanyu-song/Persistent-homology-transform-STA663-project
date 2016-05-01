@@ -159,16 +159,13 @@ def direction_order(dict_vert, list_edges, direction):
 
 	# this dictionary will map {v : height(v)} for
 	# each vertex v
-	list_heights = []
 	dict_heights = {}
 	for v in dict_vert.keys():
 		coords = dict_vert[v]
 		# this is height with respect to direction
 		height = sum(coords[i]*direction[i] for i in range(len(coords)))
 		dict_heights.update({v : height})
-		list_heights.append((v,height))
 	# sort vertices by height	
-	list_heights.sort(key = lambda x: x[1])
 
 	dict_neighbors = {v : [] for v in dict_vert.keys()}
 
@@ -195,7 +192,7 @@ def direction_order(dict_vert, list_edges, direction):
 		# higher than edge[0]
 		else:
 			dict_neighbors[edge[1]].append(edge[0])
-	return list_heights, dict_heights, dict_neighbors
+	return dict_heights, dict_neighbors
 
 # these classes are used for the Union-find algorithm
 # this is a method we can use to detect connected class
@@ -395,7 +392,7 @@ def scaled_distance(list_objects, matrix_dir):
 			dict_vert = {i+1: shape[0][i,:] for i in range(num_rows)}
 			list_edges = [list(shape[1][i,:]) for i in range(num_edges)]
 			# make the diagram for jth direction
-			l_heights, d_heights, d_n = direction_order(dict_vert,
+			d_heights, d_n = direction_order(dict_vert,
 					list_edges, direction)
 			shape_diagram = make_diagram(d_heights, d_n)
 			shape_diagrams.append(shape_diagram)
@@ -605,7 +602,7 @@ def scaled_distance_par(list_objects, matrix_dir, workers):
 			dict_vert = {i+1: shape[0][i,:] for i in range(num_rows)}
 			list_edges = [list(shape[1][i,:]) for i in range(num_edges)]
 			# make the diagram for jth direction
-			l_heights, d_heights, d_n = direction_order(dict_vert,
+			d_heights, d_n = direction_order(dict_vert,
 					list_edges, direction)
 			shape_diagram = make_diagram(d_heights, d_n)
 			shape_diagrams.append(shape_diagram)
@@ -684,7 +681,7 @@ def make_diagrams(list_objects, matrix_dir):
 			dict_vert = {i+1: shape[0][i,:] for i in range(num_rows)}
 			list_edges = [list(shape[1][i,:]) for i in range(num_edges)]
 			# make the diagram for jth direction
-			l_heights, d_heights, d_n = direction_order(dict_vert,
+			d_heights, d_n = direction_order(dict_vert,
 					list_edges, direction)
 			shape_diagram = make_diagram(d_heights, d_n)
 			shape_diagrams.append(shape_diagram)
