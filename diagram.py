@@ -543,6 +543,38 @@ def calculate_distance(i, j, k, l_diagrams):
 		these objects under rotation.  The return of i and j is for convenience
 		in parallelization.
 	"""
+	finite_dist = 0
+	infinite_dist = 0
+	for c in range(k):
+		finite_dist += finite_pt_dist(l_diagrams[i][c],
+					l_diagrams[j][c], 1)
+		infinite_dist += inf_pt_dist(l_diagrams[i][c],
+					l_diagrams[j][c], 1)
+	actual_dist = (finite_dist + infinite_dist)/k
+	return i, j, actual_dist
+
+
+def calculate_distance_scale(i, j, k, l_diagrams):
+	"""
+	This function calculates the distance between i and j modulo rotation.
+	To do this, we calculate the distance between i and all rotations of j
+	and take the minimal distance.  We do not actually rotate the object.
+	Instead, we realize that the persistence diagram of a rotation is
+	is persistence diagram of a different direction.  Thus we simply rename the 
+	persistence diagrams.  
+
+	Args:
+		i:  index of first object
+		j:  index of second object
+		k:  number of directions
+		l_diagrams:  a list of diagrams for each object in each of the
+			k directions
+	
+	Return:
+		The returns a tuple with 3 number: i, j, and the distance between
+		these objects under rotation.  The return of i and j is for convenience
+		in parallelization.
+	"""
 	list_dists = []
 	for shift in range(k):
 		finite_dist = 0
@@ -557,8 +589,6 @@ def calculate_distance(i, j, k, l_diagrams):
 		list_dists.append(finite_dist + infinite_dist)
 	actual_dist = min(list_dists)/k
 	return i, j, actual_dist
-
-
 
 
 def scaled_distance_par(list_objects, matrix_dir, workers):
@@ -620,29 +650,6 @@ def scaled_distance_par(list_objects, matrix_dir, workers):
 
 
 
-def scaled_distance_short(list_objects, k, workers):
-	# number of objects
-	N = len(list_objects)
-	# number of directions	
-	matrix_dir = sample_circle(k).T
-	# compute centering constant
-	scaled_objects = center_scale(list_objects, matrix_dir)
-	# now we create a list of diagrams
-	# each item in the list is a list of
-	# diagrams for one object in each direction
-	# so it is a list of length N with sublists
-	# of size k
-	l_diagrams = make_diagrams(scaled_objects, matrix_dir)
-	dist_mat = np.zeros((N,N))
-	print("Beginning to calculate distances")
-	list_inputs = [(i, j, k, l_diagrams) for i in range(N)
-										 for j in range(i+1, N)]
-	with mp.Pool(processes=workers) as pool:
-		distances = pool.starmap(calculate_distance, list_inputs)
-	for tup in distances:
-		dist_mat[tup[0],tup[1]] = tup[2]
-	dist_mat += dist_mat.T
-	return dist_mat
 
 def center_scale(list_objects, matrix_dir):
 	k = matrix_dir.shape[1]
@@ -699,7 +706,109 @@ def read_closed_shapes(directory):
 		vertices = sio.loadmat(file)['x']
 		N = vertices.shape[0]
 		edges = np.zeros((N,2))
+		edges[N-1,:] = np.array([N, 1])
 		for i in range(N-1):
 			edges[i,:] = np.array([i+1, i+2])
 		shapes.append([vertices, edges])
 	return shapes
+
+def distance_unscaled(list_objects, k):
+	N = len(list_objects)
+	
+	matrix_dir = sample_circle(k).T
+	l_diagrams = make_diagrams(list_objects, matrix_dir)
+	dists = np.zeros((N,N))
+	for i in range(N):
+		for j in range(i+1,N):
+			r1, r2, dist = calculate_distance(i,j,k,l_diagrams)
+			dists[i,j] = dist
+	dists += dists.T
+	return dists
+
+
+def distance_scaled(list_objects, k):
+	N = len(list_objects)
+	
+	matrix_dir = sample_circle(k).T
+	scaled_objects = center_scale(list_objects, matrix_dir)
+	l_diagrams = make_diagrams(scaled_objects, matrix_dir)
+	dists = np.zeros((N,N))
+	for i in range(N):
+		for j in range(i+1,N):
+			r1, r2, dist = calculate_distance_scale(i, j, k, l_diagrams)
+			dists[i,j] += dist
+	dists += dists.T
+	return dists
+
+def distance_unscaled_mc(list_objects, k, workers):
+	# number of objects
+	N = len(list_objects)
+	# number of directions	
+	matrix_dir = sample_circle(k).T
+	# now we create a list of diagrams
+	# each item in the list is a list of
+	# diagrams for one object in each direction
+	# so it is a list of length N with sublists
+	# of size k
+	l_diagrams = make_diagrams(list_objects, matrix_dir)
+	dist_mat = np.zeros((N,N))
+	list_inputs = [(i, j, k, l_diagrams) for i in range(N)
+										 for j in range(i+1, N)]
+	with mp.Pool(processes=workers) as pool:
+		distances = pool.starmap(calculate_distance, list_inputs)
+	for tup in distances:
+		dist_mat[tup[0],tup[1]] = tup[2]
+	dist_mat += dist_mat.T
+	return dist_mat
+
+def distance_scaled_mc(list_objects, k, workers):
+	# number of objects
+	N = len(list_objects)
+	# number of directions	
+	matrix_dir = sample_circle(k).T
+	# compute centering constant
+	scaled_objects = center_scale(list_objects, matrix_dir)
+	# now we create a list of diagrams
+	# each item in the list is a list of
+	# diagrams for one object in each direction
+	# so it is a list of length N with sublists
+	# of size k
+	l_diagrams = make_diagrams(scaled_objects, matrix_dir)
+	dist_mat = np.zeros((N,N))
+	list_inputs = [(i, j, k, l_diagrams) for i in range(N)
+										 for j in range(i+1, N)]
+	with mp.Pool(processes=workers) as pool:
+		distances = pool.starmap(calculate_distance_scale, list_inputs)
+	for tup in distances:
+		dist_mat[tup[0],tup[1]] = tup[2]
+	dist_mat += dist_mat.T
+	return dist_mat
+
+
+
+def read_files(list_files, d):
+	list_objects = []
+	for cur_file in list_files:
+		with open(cur_file, "r") as f:
+			line = f.readline()
+			splitline = line.split()
+			num_vert = int(splitline[0])
+			num_edges = int(splitline[1])
+
+			vertices = np.empty((num_vert, d))
+			edges = np.empty((num_edges, 2))
+
+			# dictionary of vertices {i: v_i}
+
+			for i in range(num_vert):
+				line = f.readline()
+				splitline = line.split()
+				numeric_line = [float(x) for x in splitline]
+				vertices[i,:] = np.array(numeric_line)
+			for i in range(num_edges):
+				line = f.readline()
+				splitline = line.split()
+				numeric_line = [float(x) for x in splitline]
+				edges[i,:] = np.array(numeric_line)
+			list_objects.append([vertices, edges])
+	return(list_objects)
