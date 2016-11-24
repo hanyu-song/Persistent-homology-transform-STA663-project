@@ -76,6 +76,8 @@ Duke University\\
 %% Note: If there is markup in \(sub)section, then it has to be escape as above.
 \section[Background]{Background}The paper introduces a tool that can be used to perform statistical shape analysis on objects in $\mathbb{R}^3$ and shapes in $\mathbb{R}^2$.  The result can be of interest to topological data analysists (TDA), researchers modeling shapes (such as medical imaging) and morphologists. One of the paper authors use this to compute the distance between heel bones in primates to generate a tree, which can be compared with a tree generated from the genetic distances between primate species.  
 
+The paper by \cite{foo2010} presents an approach to obtain a representation of a shape that can be used in statistical models.  In particular, the paper shows that persistence diagrams, which are explained in detail below, are sufficient statistics for shape and surface models.  This is an important result because it demonstrates that persistent homology, an essential tool in TDA, preserves information.  
+
 \section[Code Overview]{Code Overview}
 Here is a list of functions contained in the package:
 \begin{enumerate}
@@ -96,39 +98,39 @@ Two functions for reading in data are included in the package. The first \texttt
 \subsection{Functions for construction of persistence diagrams}
 We wrote  to construct a persistence diagram given a direction is included in the package. Below are the detailed explanations of persistence diagrams.
 
-A persistence diagram is a filtration.  We start with an object and "build" the object in a certain direction.  We record when each point in the object first appears (is "born") and when it merges into an object that already exists (it "dies).  Consider the shape below:
+A persistence diagram is a filtration.  We start with an object and ``build'' the object in a certain direction.  We record when each point in the object first appears (is ``born'') and when it merges into an object that already exists (it ``dies'').  Consider the shape given in Figure \ref{Full_fig}.
 \begin{figure}
 \centering
 \includegraphics[width = 0.75\textwidth]{../full_fig.pdf}
-\caption{\label{Full_Fig}}
+\caption{\label{Full_Fig} A shape that we are interested in modeling.}
 \end{figure}
-We will construct this figure in the direction $v = (0,1)$.  If we imagine moving upwards across the figure, the first height at which we will see any points of the diagram is $h=-1$.  We see that vertices 1 and 7 are born at $h = -1$, as shown below:
+We will construct this figure in the direction $v = (0,1)$.  If we imagine moving upwards across the figure, the first height at which we will see any points of the diagram is $h=-1$.  We see that vertices 1 and 7 are born at $h = -1$, as shown in Figure \ref{h1}.
 \begin{figure}
 \centering
 \includegraphics[width = 0.75\textwidth]{../h1.pdf}
-\caption{\label{h1}}
+\caption{\label{h1} The figure at height $h = -1$.}
 \end{figure}
-The next height at which something something interesting happens is $h = 0$, at which time three more points are born.  All of these points, however, die immediately.  Vertex 2 merges with vertex 1 and vertices 4 and 5 merge with vertex 7.  At this time we have two unconnected components.
+The next height at which something something interesting happens is $h = 0$, at which time three more points are born.  All of these points, however, die immediately.  Vertex 2 merges with vertex 1 and vertices 4 and 5 merge with vertex 7.  At this time we have two unconnected components. This is shown in Figure \ref{persist_diag2}.
 \begin{figure}
 \centering
 \includegraphics[width = 0.75\textwidth]{../persist_diag2.pdf}
-\caption{\label{persist_diag2}}
+\caption{\label{persist_diag2} The persistence diagram in the direction $v$ at time $h=0$.}
 \end{figure}
 Once we reach $h = 1$, we have finished constructing the diagram.  Vertex 6 dies immediately because it merges with vertex 5.  Vertex 3 joints the two components that were previously disjoint.  Since vertices 1 and 7 were both born at $h=-1$, we make a convention that lower numbered vertices will be considered the root and higher numbered vertices will merge with them.  Thus at time $h=1$ vertex 7 dies, as it merges with vertex 1.
 \begin{figure}
 \centering
 \includegraphics[width = 0.75\textwidth]{../persist_diag3.pdf}
-\caption{\label{pesist_diag3}}
+\caption{\label{pesist_diag3} The figure at $h=1$.}
 \end{figure}
-A plot of the persistence diagram is given below.  The red point represents vertex 1, which never dies.  We consider the point to be at $(-1,\infty)$.  The line in the figure is the diagonal.  A point on the diagonal is one that is born and dies at the same instant.  
+A plot of the persistence diagram is given in Figure \ref{diagram}.  The red point represents vertex 1, which never dies.  We consider the point to be at $(-1,\infty)$.  The line in the figure is the diagonal.  A point on the diagonal is one that is born and dies at the same instant.  
 \begin{figure}
 \centering
 \includegraphics[width = 0.75\textwidth]{../diagram.png}
-\caption{\label{diagram}}
+\caption{\label{diagram} The persistence diagram for our shape.}
 \end{figure}
-To impliment this process of constructing persistence diagrams, we need to be able to tell when a vertex is born and when the vertex merges with another component.  For a fixed direction $v$ (which we will always take to be unit length), we can easily determien the height of a vertex. The height of a vertex $p$ with respect to a direction $v$ is simply the inner product of these two vectors.  
 
-The harder part of the algorithm is determining when components merge.  To keep track of this, we will use a modified version of the Union-Find algorithm.  We define a class called \texttt{Tree}.  A \texttt{Tree} object has a parent and every tree begins with its own parent.  For convenience, it also has a name.  We will name a tree after a vertex.  So for each vertex $i$ there will be a tree such that \texttt{Tree.name = i}.  
+
+To impliment this process of constructing persistence diagrams, we need to be able to tell when a vertex is born and when the vertex merges with another component.  For a fixed direction $v$ (which we will always take to be unit length), we can easily determien the height of a vertex. The height of a vertex $p$ with respect to a direction $v$ is simply the inner product of these two vectors.  The harder part of the algorithm is determining when components merge.  To keep track of this, we will use a modified version of the Union-Find algorithm.  We define a class called \texttt{Tree}.  A \texttt{Tree} object has a parent and every tree begins with its own parent.  For convenience, it also has a name.  We will name a tree after a vertex.  So for each vertex $i$ there will be a tree such that \texttt{Tree.name = i}.  
 
 The function \texttt{Find} finds the root of a tree by traveling up the tree until we find a tree that is equal to its parent.  The function \texttt{height\_Union} joins two trees in a specific way.  If the two input trees have the same root, nothing is done.  If the two trees have different heights, we make the root of one tree equal to the root of the other tree, effectively merging the trees.  As persistence diagrams are built upwards, we make the root of the joint tree the vertex that has the smaller height.  If the vertices have the same height, we make the root the vertex with the lower number.  
 
@@ -191,11 +193,11 @@ def height_Union(x, y, dict_heights):
 \end{verbatim}
 
 \section[Distance diagrams]{Distance between persistence diagrams}
-Once we have a diagram, we can consider the distance between diagrams.  If $X$ and $Y$ are diagrams, we can consider bijections $\phi$ between the points and copies of the diagonal in $X$ with the points and copies of the diagonal in $Y$.  Bijections always exist because there are enought copies of the diagonal to create one.  We define the distance between $X$ and $Y$ to be
+Once we have a diagram, we can consider the distance between diagrams.  If $X$ and $Y$ are diagrams, we can consider bijections $\phi$ between the points and copies of the diagonal in $X$ with the points and copies of the diagonal in $Y$.  Bijections always exist because we can add enough copies of the diagonal to create one.  We define the distance between $X$ and $Y$ to be
 \begin{align}
 dist_p(X,Y) &= \left(\inf_{\phi: X \to Y}\sum_{x \in X} ||x - \phi(x)||_p^p\right)^{1/p}.
 \end{align}
-The paper suggests that $p=1$ performs best in practice (the $L1$ norm).  The existence of an optimal bijection is proved in the literature.  An example of an optimal bijection is shown below (taken from www.math.uiuc.edu).  The points of $X$ are shown in red and the points of $Y$ are shown in blue.  The red points are paired with nearby blue points.  Most blue points are paired with their projection onto the diagonal.  In practice, we see that we add the projection onto the diagonal for each point.  This is an optimization problem that can be solved using the Hungarian (Munkres) algorithm.  We can calculate the distance between the points in $X$ and the points in $Y$ and the distance from the points in $X$ to the diagonal.  This can be represented as a cost matrix.  
+The paper suggests that $p=1$ performs best in practice (the $L_1$ norm).  The existence of an optimal (but not necessarily unique) bijection is proved in \cite{turn13}.    In practice, we see that we can add the projection onto the diagonal for each point.  This is an optimization problem that can be solved using the Hungarian (Munkres) algorithm.  We can calculate the distance between the points in $X$ and the points in $Y$ and the distance from the points in $X$ to the diagonal.  This can be represented as a cost matrix, where the $ij$ entry is the $L_1$ distance between point $i$ in $X$ and point $j$ in $Y$.  The original algorithm is $O(n^4)$, but it was later improved to $O(n^3)$ (see \cite{kuhn55}, \cite{kuhn56}, \cite{munk57}).  
 
 As we will discuss in detail later, this is the bottleneck in our code.  The algorithm is somewhat difficult to implement, so we used an existing implementation.  Another difficulty is that the first implementation we tried got stuck in an infinite loop.  We settled on using a function from \texttt{scipy.optimize}, \texttt{linear\_sum\_assignment}.  This is the distance between the finite points.  We also need to consider the points with one component at infinity.  We will pair these amongst themselves and simply consider the distance between the birth times.  If two diagrams have a different number of points at infinity, then we would have to pair a point at infinity with a finite point or a point on the diagonal, which is infinitely far away.  The distance between such diagrams is said to be infinite.  
 
