@@ -35,7 +35,7 @@
 \Shorttitle{Package for PHT} %% a short title (if necessary)
 %\begin{document}
 %% an abstract and keywords
-\Abstract{In this paper we present a package implementing the results of the paper by Turner et. al.  In particular, we wrote codes to compute the persistent homology transform (PHT) of objects in $\mathbb{R}^3$ and shapes in $\mathbb{R}^2$.  PHT is a statistic that completely describes a shape or surface using topological properties, and thus allows us to determine a metric on the space of piecewise linear shapes. A metric opens up many different possibilities for statistical analysis, including clustering. }
+\Abstract{In this paper we present a package implementing the results of the paper by Turner et. al (2014).  This package is mainly intended for computing the persistent homology transform (PHT) of objects in $\mathbb{R}^3$ and shapes in $\mathbb{R}^2$.  PHT is a statistic that completely describes a shape or surface using topological properties, and thus allows us to determine a metric on the space of piecewise linear shapes. This metric opens up many different possibilities for statistical analysis, such as clustering shapes. }
 \Keywords{persistent homology transform, \proglang{Python}}
 \Plainkeywords{, comma-separated, not capitalized, Java} %% without formatting
 %% at least one keyword must be supplied
@@ -74,9 +74,9 @@ Duke University\\
 %% include your article here, just as usual
 %% Note that you should use the \pkg{}, \proglang{} and \code{} commands.
 %% Note: If there is markup in \(sub)section, then it has to be escape as above.
-\section[Background]{Background}The paper introduces a tool that can be used to perform statistical shape analysis on objects in $\mathbb{R}^3$ and shapes in $\mathbb{R}^2$.  The result can be of interest to topological data analysists (TDA), researchers modeling shapes (such as medical imaging) and morphologists. One of the paper authors use this to compute the distance between heel bones in primates to generate a tree, which can be compared with a tree generated from the genetic distances between primate species.  
+\section[Background]{Background}Turner et al.(2014)'s paper introduces a tool that can be used to perform statistical shape analysis on objects in $\mathbb{R}^3$ and shapes in $\mathbb{R}^2$.  The result can be of interest to topological data analysists, researchers modeling shapes (such as medical imaging) and morphologists. One of the paper authors implements the result to compute the distances between heel bones in primates and generate a tree, which can be compared with a tree generated from the genetic distances between primate species.  
 
-The paper by \cite{foo2010} presents an approach to obtain a representation of a shape that can be used in statistical models.  In particular, the paper shows that persistence diagrams, which are explained in detail below, are sufficient statistics for shape and surface models.  This is an important result because it demonstrates that persistent homology, an essential tool in TDA, preserves information.  
+The paper presents an approach to obtain a representation of a shape that can be used in statistical models.  In particular, the paper shows that persistence diagrams, which are explained in detail below, are sufficient statistics for shape and surface models.  This is an important result because it demonstrates that persistent homology, an essential tool in topological data analysis (TDA), preserves information.  
 
 \section[Code Overview]{Code Overview}
 Here is a list of functions contained in the package:
@@ -89,16 +89,16 @@ Here is a list of functions contained in the package:
 \item{Functions to generate diagrams for many objects given a set of directions}
 \item{Main function to be called by user}
 \end{enumerate}
-The following packages are required for implementation: \texttt{math, multiprocessing, numpy, scipy, glob} and \texttt{numba}.
+The following packages are required for implementation: \pkg{math}, \pkg{multiprocessing}, \pkg{NumPy}, \pkg{SciPy}, \pkg{glob} and \pkg{Numba}.
 
 
 \subsection{Functions for reading shapes}
-Two functions for reading in data are included in the package. The first \texttt{read\_file} is for reading in text files saved with raw shape data; the second \texttt{read\_closed\_shape} is used to read Matlab \texttt{.mat} files saved with closed shape data. Note that each file contains the data of only one shape. Both functions can read all relevant files in a specified directory; both return a list of vertices and edges of each shape, with the vertices and edges saved in two separate \texttt{numpy.ndarray}'s.
+Two functions for reading in data are included in the package. The first \texttt{read\_file} is for reading in text files saved with raw shape data; the second \texttt{read\_closed\_shape} is used to read MATLAB \texttt{.mat} files saved with closed shape data. Note that each file contains data of only one shape. Both functions can read all relevant files in a specified directory; both return a list of vertices and edges of each shape, with the vertices and edges saved in two separate \texttt{numpy.ndarray}'s.
 
 \subsection{Functions for construction of persistence diagrams}
-We wrote  to construct a persistence diagram given a direction is included in the package. Below are the detailed explanations of persistence diagrams.
+A function to construct a persistence diagram given a direction is included in the package. Below are the detailed explanations of persistence diagrams.
 
-A persistence diagram is a filtration.  We start with an object and ``build'' the object in a certain direction.  We record when each point in the object first appears (is ``born'') and when it merges into an object that already exists (it ``dies'').  Consider the shape given in Figure \ref{Full_fig}.
+A persistence diagram is a filtration.  We start with an object and ``build'' the object in a certain direction.  We record when each point in the object first appears (is ``born'') and when it merges into an object that already exists (it ``dies'').  Consider the shape given in Figure \ref{Full_Fig}.
 \begin{figure}
 \centering
 \includegraphics[width = 0.75\textwidth]{../full_fig.pdf}
@@ -130,9 +130,9 @@ A plot of the persistence diagram is given in Figure \ref{diagram}.  The red poi
 \end{figure}
 
 
-To impliment this process of constructing persistence diagrams, we need to be able to tell when a vertex is born and when the vertex merges with another component.  For a fixed direction $v$ (which we will always take to be unit length), we can easily determien the height of a vertex. The height of a vertex $p$ with respect to a direction $v$ is simply the inner product of these two vectors.  The harder part of the algorithm is determining when components merge.  To keep track of this, we will use a modified version of the Union-Find algorithm.  We define a class called \texttt{Tree}.  A \texttt{Tree} object has a parent and every tree begins with its own parent.  For convenience, it also has a name.  We will name a tree after a vertex.  So for each vertex $i$ there will be a tree such that \texttt{Tree.name = i}.  
+To implement this process of constructing persistence diagrams, we need to be able to tell when a vertex is born and when the vertex merges with another component.  For a fixed direction $v$ (which we will always take to be unit length), we can easily determine the height of a vertex. The height of a vertex $p$ with respect to a direction $v$ is simply the inner product of these two vectors.  The harder part of the algorithm is determining when components merge.  To keep track of this, we will use a modified version of the Union-Find algorithm.  We define a class called \texttt{Tree}.  A \texttt{Tree} object has a parent and every tree begins with its own parent.  For convenience, it also has a name.  We will name a tree after a vertex.  So for each vertex $i$ there will be a tree such that \texttt{Tree.name = i}.  
 
-The function \texttt{Find} finds the root of a tree by traveling up the tree until we find a tree that is equal to its parent.  The function \texttt{height\_Union} joins two trees in a specific way.  If the two input trees have the same root, nothing is done.  If the two trees have different heights, we make the root of one tree equal to the root of the other tree, effectively merging the trees.  As persistence diagrams are built upwards, we make the root of the joint tree the vertex that has the smaller height.  If the vertices have the same height, we make the root the vertex with the lower number.  To increase the efficiency of the search, we update the root of each tree with each search. This reduces the cost of using the recursive \texttt{Find} function.  
+The function \texttt{Find} finds the root of a tree by traveling up the tree until we find a tree that is equal to its parent.  The function \texttt{height\_Union} joins two trees in a specific way.  If the two input trees have the same root, nothing is done.  If the two trees have different heights, we make the root of one tree equal to the root of the other tree, effectively merging the trees.  As persistence diagrams are built upwards, we make the root of the joint tree the vertex that has the smaller height. If the vertices have the same height, we make the root the vertex with the lower number.  To increase the efficiency of the search, we update the root of each tree with each search. This reduces the cost of using the recursive \texttt{Find} function.  
 
 These functions are used internally and will not be called by a user.  
 
@@ -197,7 +197,7 @@ Once we have a diagram, we can consider the distance between diagrams.  If $X$ a
 \begin{align}
 dist_p(X,Y) &= \left(\inf_{\phi: X \to Y}\sum_{x \in X} ||x - \phi(x)||_p^p\right)^{1/p}.
 \end{align}
-The paper suggests that $p=1$ performs best in practice (the $L_1$ norm).  The existence of an optimal (but not necessarily unique) bijection is proved in \cite{turn13}.    In practice, we see that we can add the projection onto the diagonal for each point.  This is an optimization problem that can be solved using the Hungarian (Munkres) algorithm.  We can calculate the distance between the points in $X$ and the points in $Y$ and the distance from the points in $X$ to the diagonal.  This can be represented as a cost matrix, where the $ij$ entry is the $L_1$ distance between point $i$ in $X$ and point $j$ in $Y$.  The original algorithm is $O(n^4)$, but it was later improved to $O(n^3)$ (see \cite{kuhn55}, \cite{kuhn56}, \cite{munk57}).  
+The paper suggests that $p=1$ performs best in practice (the $L_1$ norm).  The existence of an optimal (but not necessarily unique) bijection is proved in \cite{turn13}.    In practice, we see that we can add the projection onto the diagonal for each point.  This is an optimisation problem that can be solved using the Hungarian (Munkres) algorithm.  We can calculate the distance between the points in $X$ and the points in $Y$ and the distance from the points in $X$ to the diagonal.  This can be represented as a cost matrix, where the $ij$ entry is the $L_1$ distance between point $i$ in $X$ and point $j$ in $Y$.  The original algorithm is $O(n^4)$, but it was later improved to $O(n^3)$ (see \cite{kuhn55}, \cite{kuhn56}, \cite{munk57}).  
 
 As we will discuss in detail later, this is the bottleneck in our code.  The algorithm is somewhat difficult to implement, so we used an existing implementation.  Some of the existing and publicly available implementations of this algorithm suffer from errors that cause the code to become stuck in an infinite loop.  We settled on using a function from \texttt{scipy.optimize}, \texttt{linear\_sum\_assignment}.  This is the distance between the finite points.  We also need to consider the points with one component at infinity.  We will pair these amongst themselves and simply consider the distance between the birth times.  If two diagrams have a different number of points at infinity, then we would have to pair a point at infinity with a finite point or a point on the diagonal, which is infinitely far away.  The distance between such diagrams is said to be infinite.  
 
@@ -208,10 +208,10 @@ dist(M_1,M_2) := \int_{S^{d-1}} dist(X(M_1,v),X(M_2,v))\,dv,
 \end{align}
 where $X(M_i,v)$ is the persistence diagram for object $M_i$ in direction $v$.  Stability results from \cite{foo2010} reassure that the error in approximating the distance using only a finite sampling of directions should be small.  Thus we approximate this integral by using a sample of points from the circle (in $\mathbb{R}^2$) or the sphere (in $\mathbb{R}^3$), i.e. we evaluate the integral using either Monte Carlo integration (if we randomly select directions) or numeric integration (if we select evenly spaced vectors).  It will generally be preferable to select evenly spaced vectors to numerically approximate the integral, as is noted in the next paragraph.  
 
-If is often useful to consider objects modulo a group of transformations, typically scaling, rotation, and translation. For instance, if one object is simply a rotation of another object, we would like the distance between the objects to be zero.  Descriptions of how to implement these transformations can be found in the \cite{foo2010}.  The code that centers and scales the objects can be found in the package.  The implementation of rotation is slightly different.  To calculate the distance modulo rotation, we must consider all possible rotations of the second object and select the one that minimizes the distance.  In practice, we select some finite set of rotations to consider.  Furthermore, we do not actually rotate the object.  Instead, we note that the persistence diagram of a rotated object is the persistence diagram of a rotated direction.  Thus if we pick evenly spaced vectors, we simply need to relabel persistence diagrams to rotate objects.
+If is often useful to consider objects modulo a group of transformations, typically scaling, rotation, and translation. For instance, if one object is simply a rotation of another object, we would like the distance between the objects to be zero.  Descriptions of how to implement these transformations can be found in the \cite{foo2010}.  The code that centers and scales the objects can be found in the package.  The implementation of rotation is slightly different.  To calculate the distance modulo rotation, we must consider all possible rotations of the second object and select the one that minimises the distance.  In practice, we select some finite set of rotations to consider.  Furthermore, we do not actually rotate the object.  Instead, we note that the persistence diagram of a rotated object is the persistence diagram of a rotated direction.  Thus if we pick evenly spaced vectors, we simply need to relabel persistence diagrams to rotate objects.
 
 \section[algorithm]{Algorithms}
-One algorithm used is the Hungarian (or Munkres) algorithm.  The alogirthm is used in situations where assignments with an associated cost must be made and the goal is to select the assignment to minimize the cost.  Here we use this algorithm to calculate the distance between persistence diagrams. The distance between persistence diagrams is the sum of the distances between the points of the first persistence diagram paired with the points of the second diagram and additional points on the diagonal.  Selecting the pairing that minimzies this distance can be achieved using the Munkres algorithm.
+One algorithm used is the Hungarian (or Munkres) algorithm.  The algorithm is used in situations where assignments with an associated cost must be made and the goal is to select the assignment to minimise the cost.  Here we use this algorithm to calculate the distance between persistence diagrams. The distance between persistence diagrams is the sum of the distances between the points of the first persistence diagram paired with the points of the second diagram and additional points on the diagonal.  Selecting the pairing that minimises this distance can be achieved using the Munkres algorithm.
 
 Another algorithm used in our code is the Union-Find algorithm.  This algorithm is used in the construction of the persistence diagrams. During the construction we must keep track of when disjoint components merge.  We view each component as a tree.  When two components merge we join the roots of the trees.  This allows us to find when disjoint components merge.
 
@@ -267,11 +267,11 @@ We will now test the code on real data from the MPEG-7 data set.  These are imag
 
 \section[optimization]{Optimization}
 \subsection{Code Optimization}
-We tried optimizing the performance of the codes using \texttt{numba} just-in-time (JIT) compilation, \texttt{Cython}, embarrassingly parallel processing. Based on the input file \texttt{Class1\_Sample1.mat}, most functions perform very well, taking only milliseconds to process such a shape with $375$ vertices. Assuming we want to measure the distance between such a shape to another shape with $375$ vertices, it takes $33.6s$ for the current Munkres algorithm to finish running, suggesting room for improvement.
+We tried optimising the performance of the codes using \texttt{numba} just-in-time (JIT) compilation, \texttt{Cython}, embarrassingly parallel processing. Based on the input file \texttt{Class1\_Sample1.mat}, most functions perform very well, taking only milliseconds to process such a shape with $375$ vertices. Assuming we want to measure the distance between such a shape to another shape with $375$ vertices, it takes $33.6s$ for the current Munkres algorithm to finish running, suggesting room for improvement.
 
 We used the function \texttt{linear\_sum\_assignment}  from \texttt{scipy.optimize}. To improve its performance, we tried numba JIT computation, simple compilation in \texttt{Cython}, cythonizing via static typing and \texttt{cnumpy} iteration and wrapping \texttt{C} codes. However, no correct and easily accessible \texttt{C} or \texttt{C++} functions have been found. Neither have we achieve significant improvement in \texttt{Python}. Specifically, the major problem in cythonizing concerns the fast array declarations in \texttt{cdef} classes. Fast array declarations, however, are currently not accessible in the fields of cdef classes or as global variables, according to Cython documentation.
 
-We benchmarked the different optimization strategies based on a $1,000 \times 1,000$ cost matrix. The performances are  summarized in the table below:
+We benchmarked the different optimisation strategies based on a $1,000 \times 1,000$ cost matrix. The performances are summarized in the table below:
 \begin{table}[]
 \centering
 \caption{Function Speeds}
@@ -283,7 +283,7 @@ Wall Time & 1 min 41s         & 1 min 27s & 1 min 46s & 1 min 42s               
 \end{tabular}
 \end{table}
 
-\subsection{Algorithm Optimization}
+\subsection{Algorithm Optimisation}
 We sped up the function \texttt{make\_diagram} via better algorithm. When constructing a \texttt{diagram}, we exclude points that are born and die at the same time,i.e. points that fall on the diagonal (as shown below), which largely reduces the size of the cost matrix, thereby leading to a significant speed-up of \texttt{linear\_sum\_assignment}, the function we discussed above.  
 
 The chunk that helps speed up the function is shown below:
