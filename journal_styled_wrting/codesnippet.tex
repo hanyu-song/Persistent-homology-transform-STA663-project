@@ -30,12 +30,12 @@
 \title{\pkg{PHT}: a \proglang{Python} Package for Computing Persistent Homology Transform to Metricise Shapes}
 
 %% for pretty printing and a nice hypersummary also set:
-\Plainauthor{Achim Zeileis, Second Author} %% comma-separated
-\Plaintitle{A Capitalized Title: Possibly Containing More Details} %% without formatting
-\Shorttitle{A Capitalized Title} %% a short title (if necessary)
+\Plainauthor{Hanyu Song, Azeem Zaman} %% comma-separated
+\Plaintitle{A Package for Computing Persistent homology Transform} %% without formatting
+\Shorttitle{Package for PHT} %% a short title (if necessary)
 %\begin{document}
 %% an abstract and keywords
-\Abstract{In this paper we present the results of our development of  a package implementing the results of the paper by Turner et. al.  In particular, we wrote codes to compute the persistent homology transform (PHT) of objects in $\mathbb{R}^3$ and shapes in $\mathbb{R}^2$.  PHT is a statistic that completely describes a shape or surface using topological properties, and thus allows us to determine a metric on the space of piecewise linear shapes. A metric opens up many different possibilites for statistical analysis, including clustering. }
+\Abstract{In this paper we present a package implementing the results of the paper by Turner et. al.  In particular, we wrote codes to compute the persistent homology transform (PHT) of objects in $\mathbb{R}^3$ and shapes in $\mathbb{R}^2$.  PHT is a statistic that completely describes a shape or surface using topological properties, and thus allows us to determine a metric on the space of piecewise linear shapes. A metric opens up many different possibilities for statistical analysis, including clustering. }
 \Keywords{persistent homology transform, \proglang{Python}}
 \Plainkeywords{, comma-separated, not capitalized, Java} %% without formatting
 %% at least one keyword must be supplied
@@ -199,7 +199,7 @@ dist_p(X,Y) &= \left(\inf_{\phi: X \to Y}\sum_{x \in X} ||x - \phi(x)||_p^p\righ
 \end{align}
 The paper suggests that $p=1$ performs best in practice (the $L_1$ norm).  The existence of an optimal (but not necessarily unique) bijection is proved in \cite{turn13}.    In practice, we see that we can add the projection onto the diagonal for each point.  This is an optimization problem that can be solved using the Hungarian (Munkres) algorithm.  We can calculate the distance between the points in $X$ and the points in $Y$ and the distance from the points in $X$ to the diagonal.  This can be represented as a cost matrix, where the $ij$ entry is the $L_1$ distance between point $i$ in $X$ and point $j$ in $Y$.  The original algorithm is $O(n^4)$, but it was later improved to $O(n^3)$ (see \cite{kuhn55}, \cite{kuhn56}, \cite{munk57}).  
 
-As we will discuss in detail later, this is the bottleneck in our code.  The algorithm is somewhat difficult to implement, so we used an existing implementation.  Another difficulty is that the first implementation we tried got stuck in an infinite loop.  We settled on using a function from \texttt{scipy.optimize}, \texttt{linear\_sum\_assignment}.  This is the distance between the finite points.  We also need to consider the points with one component at infinity.  We will pair these amongst themselves and simply consider the distance between the birth times.  If two diagrams have a different number of points at infinity, then we would have to pair a point at infinity with a finite point or a point on the diagonal, which is infinitely far away.  The distance between such diagrams is said to be infinite.  
+As we will discuss in detail later, this is the bottleneck in our code.  The algorithm is somewhat difficult to implement, so we used an existing implementation.  Some of the existing and publicly available implementations of this algorithm suffer from errors that cause the code to become stuck in an infinite loop.  We settled on using a function from \texttt{scipy.optimize}, \texttt{linear\_sum\_assignment}.  This is the distance between the finite points.  We also need to consider the points with one component at infinity.  We will pair these amongst themselves and simply consider the distance between the birth times.  If two diagrams have a different number of points at infinity, then we would have to pair a point at infinity with a finite point or a point on the diagonal, which is infinitely far away.  The distance between such diagrams is said to be infinite.  
 
 \section[Distance objects]{Distance between objects}
 Now that we can calculate the distance between two persistence diagrams, we are ready to compute the distance between two objects in $\mathbb{R}^2$ or $\mathbb{R}^3$.  For the objects we are considering, the distance (which is indeed a distance based on the results in the paper) is
@@ -269,8 +269,7 @@ We will now test the code on real data from the MPEG-7 data set.  These are imag
 \subsection{Code Optimization}
 We tried optimizing the performance of the codes using \texttt{numba} just-in-time (JIT) compilation, \texttt{Cython}, embarrassingly parallel processing. Based on the input file \texttt{Class1\_Sample1.mat}, most functions perform very well, taking only milliseconds to process such a shape with $375$ vertices. Assuming we want to measure the distance between such a shape to another shape with $375$ vertices, it takes $33.6s$ for the current Munkres algorithm to finish running, suggesting room for improvement.
 
-We used the function \texttt{linear\_sum\_assignment} (Source: https://github.com/scipy/scipy/blob/master/scipy/optimize/\_hungarian.py\#L13-L107`scipy) from \texttt{scipy.optimize}. To improve its performance, we tried numba JIT computation, simple compilation in \texttt{Cython}, cythonizing via static typing and \texttt{cnumpy} iteration and wrapping \texttt{C} codes. However, no correct and easily accessible \texttt{C} or \texttt{C++} functions have been found. Neither have we achieve significant improvement in \texttt{Python}. Specifically, the major problem in cythonizing concerns the fast array declarations in \texttt{cdef} classes. Fast array declarations, however, are currently not accessible in the fields of cdef classes or as global variables, according to Cython documentation
-(ref: http://cython.readthedocs.io/en/latest/src/tutorial/numpy.html).
+We used the function \texttt{linear\_sum\_assignment}  from \texttt{scipy.optimize}. To improve its performance, we tried numba JIT computation, simple compilation in \texttt{Cython}, cythonizing via static typing and \texttt{cnumpy} iteration and wrapping \texttt{C} codes. However, no correct and easily accessible \texttt{C} or \texttt{C++} functions have been found. Neither have we achieve significant improvement in \texttt{Python}. Specifically, the major problem in cythonizing concerns the fast array declarations in \texttt{cdef} classes. Fast array declarations, however, are currently not accessible in the fields of cdef classes or as global variables, according to Cython documentation.
 
 We benchmarked the different optimization strategies based on a $1,000 \times 1,000$ cost matrix. The performances are  summarized in the table below:
 \begin{table}[]
@@ -285,7 +284,7 @@ Wall Time & 1 min 41s         & 1 min 27s & 1 min 46s & 1 min 42s               
 \end{table}
 
 \subsection{Algorithm Optimization}
-We sped up the function \texttt{make\_diagram} via better algorithm. When constructing a \texttt{diagram}, we exclude points that are born and die at the same time,i.e. points that fall on the diagonal (as shown below), which largely reduces the size of the cost matrix, thereby leading to a significant speed-up of \texttt{linear\_sum\_assignment}, the function we discussed above.  THIS IS THE MOST IMPORTANT OPTIMIZATION IN THE CODE!
+We sped up the function \texttt{make\_diagram} via better algorithm. When constructing a \texttt{diagram}, we exclude points that are born and die at the same time,i.e. points that fall on the diagonal (as shown below), which largely reduces the size of the cost matrix, thereby leading to a significant speed-up of \texttt{linear\_sum\_assignment}, the function we discussed above.  
 
 The chunk that helps speed up the function is shown below:
 \begin{verbatim}
